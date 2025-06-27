@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import matplotlib.pyplot as plt
 
 
 def get_clean_data(ticker, start_date, end_date) :
@@ -73,7 +74,33 @@ def backtest_sma(short, long) :
 
     return trade, df
 
-print(backtest_sma(8, 21))
+
+def plot_backtest(short, long):
+    trade, df = backtest_sma(short, long)
+    df_close = df['Close']
+    signals = [df['Signal'].iloc[i] for i in range(len(df))]
+    plt.figure(figsize=(15, 6))
+    plt.plot(df.index, df_close['SPY'], label='Prix de clôture SPY', color='black', linewidth=1)
+    plt.plot(df.index, df['MA_short'], label='MA 8 jours', color='blue', linestyle='--')
+    plt.plot(df.index, df['MA_long'], label='MA 21 jours', color='red', linestyle='--')
+
+    # # Points d'achat
+    # buy_signals = [elt for elt in signals if elt == 1]
+    # plt.scatter(df.index, buy_signals, marker='^', color='green', label='Achat', s=100)
+
+    # # Points de vente
+    # sell_signals = [elt for elt in signals if elt == -1]
+    # plt.scatter(df.index, sell_signals, marker='v', color='red', label='Vente', s=100)
+
+    plt.title('Backtest stratégie MA crossover')
+    plt.xlabel('Date')
+    plt.ylabel('Prix')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+plot_backtest(8,21)
 
     
 
