@@ -20,18 +20,24 @@ def backtest_sma(short, long) :
     #generate the trading signal to buy
     df['Diff'] = df['MA_short'] - df['MA_long']
 
-    df['Signal'] = 0
+    series_signal = [0]
+    series_diff = df['Diff']
 
-    # Crossover up --> buy
-    df.loc[(df['Diff'].shift(1) <= 0) & (df['Diff'] > 0), 'Signal'] = 1
+    for i in range(1,len(series_diff)) :
+        if series_diff.iloc[i-1] < 0 and series_diff.iloc[i] > 0 :
+            series_signal.append(1)
+        elif series_diff.iloc[i-1] > 0 and series_diff.iloc[i] < 0 :
+            series_signal.append(-1)
+        else :
+            series_signal.append(0)
+    
+    df['Signal'] = series_signal
 
-    # Crossover down --> sell
-    df.loc[(df['Diff'].shift(1) >= 0) & (df['Diff'] < 0), 'Signal'] = -1
     # Making order one day after bc we work on close price
-    positions = []
-    for signal in df['Signal'].shift(-1) :
+    positions = [0]
+    for i in range(1,len(df['Signal'])) :
         position = 0 
-        if signal == 1 :
+        if series_signal[i-1] == 1 :
             position = 1
         positions.append(position)
     df['Position'] = positions
@@ -41,16 +47,16 @@ def backtest_sma(short, long) :
     position_open = False
     buy_price = 0
     sell_price = 0
-    
-    for index, row in df.iterrows():
-        signal = row['Signal']
+    df_close = df['Close'] # We define new variables to simplify the data's recuperation
+    series_close = df_close['SPY']
 
-        if signal == 1 and not position_open:
-            buy_price = row['Close']
+    for i in range(len(series_close)) :
+        if series_signal[i] == 1 and not position_open :
+            buy_price = series_close.iloc[i]
             position_open = True
 
-        elif signal == -1 and position_open:
-            sell_price = row['Close']
+        elif series_signal[i] == -1 and position_open :
+            sell_price = series_close.iloc[i]
             position_open = False
             return_on_trade.append(sell_price - buy_price)
     
