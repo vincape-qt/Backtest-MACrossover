@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from scripts.clean_data import get_clean_data
+
+def get_clean_data(ticker, start_date, end_date) :
+    df = yf.download(tickers = ticker,start = start_date,end = end_date)
+    df = df[['Close']]
+    df = df.dropna(how= 'any') #every row with a NaN is deleted   
+    return df
+
 
 def backtest_sma(short, long) :
     df = get_clean_data('SPY','2022-01-01','2025-05-31')
@@ -13,16 +19,15 @@ def backtest_sma(short, long) :
 
     #generate the trading signal to buy
     df['Diff'] = df['MA_short'] - df['MA_long']
-    df['Signal'] = 0
-    df['Signal'] = np.where(
-    (df['Diff'].shift(1) <= 0) & (df['Diff'] > 0), 1,  # crossover up --> buy
-    )
-    df['Signal'] = np.where(
-        (df['Diff'].shift(1) >= 0) & (df['Diff'] < 0), -1,  # crossover down --> sell
-        df['Signal']
-    )
 
-    #making order one day after bc we work on close price
+    df['Signal'] = 0
+
+    # Crossover up --> buy
+    df.loc[(df['Diff'].shift(1) <= 0) & (df['Diff'] > 0), 'Signal'] = 1
+
+    # Crossover down --> sell
+    df.loc[(df['Diff'].shift(1) >= 0) & (df['Diff'] < 0), 'Signal'] = -1
+    # Making order one day after bc we work on close price
     positions = []
     for signal in df['Signal'].shift(-1) :
         position = 0 
@@ -37,20 +42,32 @@ def backtest_sma(short, long) :
     buy_price = 0
     sell_price = 0
     
-    for i in range(len(df)):
-        row = df.iloc[i]
+    for index, row in df.iterrows():
+        signal = row['Signal']
 
-        if row['Signal'] == 1 and not position_open:
+        if signal == 1 and not position_open:
             buy_price = row['Close']
             position_open = True
 
-        elif row['Signal'] == -1 and position_open:
+        elif signal == -1 and position_open:
             sell_price = row['Close']
             position_open = False
-
             return_on_trade.append(sell_price - buy_price)
     
-    mean_return = return_on_trade.mean()
+    trade = {"gain" : 0, "loss" : 0}
+    gain = 0
+    loss = 0
+    for elt in return_on_trade :
+        if elt > 0 :
+            gain += elt
+        else :
+            loss += elt
+    trade['gain'] = gain
+    trade['loss'] = loss
+
+    return trade, df
+
+print(backtest_sma(8, 21))
 
     
 
