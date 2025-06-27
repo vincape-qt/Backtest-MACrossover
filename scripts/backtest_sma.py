@@ -18,7 +18,7 @@ def backtest_sma(short, long) :
     df['MA_short'] = df['Close'].rolling(window=short).mean()
     df['MA_long'] = df['Close'].rolling(window=long).mean()
 
-    #generate the trading signal to buy
+    #generate the trading signal to buy or sell
     df['Diff'] = df['MA_short'] - df['MA_long']
 
     series_signal = [0]
@@ -34,7 +34,7 @@ def backtest_sma(short, long) :
     
     df['Signal'] = series_signal
 
-    # Making order one day after bc we work on close price
+    # Making order one day after because we work on close price
     positions = [0]
     for i in range(1,len(df['Signal'])) :
         position = 0 
@@ -43,7 +43,7 @@ def backtest_sma(short, long) :
         positions.append(position)
     df['Position'] = positions
 
-    #calcul of every trade's return
+    # Calculation of every trade's return
     return_on_trade = []
     position_open = False
     buy_price = 0
@@ -84,11 +84,11 @@ def plot_backtest(short, long):
     plt.plot(df.index, df['MA_short'], label='MA 8 jours', color='blue', linestyle='--')
     plt.plot(df.index, df['MA_long'], label='MA 21 jours', color='red', linestyle='--')
 
-    # # Points d'achat
+    # # Purchase points
     # buy_signals = [elt for elt in signals if elt == 1]
     # plt.scatter(df.index, buy_signals, marker='^', color='green', label='Achat', s=100)
 
-    # # Points de vente
+    # # Sale points
     # sell_signals = [elt for elt in signals if elt == -1]
     # plt.scatter(df.index, sell_signals, marker='v', color='red', label='Vente', s=100)
 
